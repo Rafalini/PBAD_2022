@@ -1,0 +1,47 @@
+{
+  "factory_rod_size": 10,
+  "order": [
+    {
+      "rod_size": 1,
+      "rods_number": 1,
+      "relaxation_length": 0,
+      "relaxation_number": 0
+    },
+    {
+      "rod_size": 2,
+      "rods_number": 1,
+      "relaxation_length": 0,
+      "relaxation_number": 0
+    },
+    {
+      "rod_size": 3,
+      "rods_number": 1,
+      "relaxation_length": 0,
+      "relaxation_number": 0
+    },
+    {
+      "rod_size": 4,
+      "rods_number": 1,
+      "relaxation_length": 0,
+      "relaxation_number": 0
+    },
+    {
+      "rod_size": 5,
+      "rods_number": 1,
+      "relaxation_length": 0,
+      "relaxation_number": 0
+    },
+    {
+      "rod_size": 7,
+      "rods_number": 1,
+      "relaxation_length": 0,
+      "relaxation_number": 0
+    },
+    {
+      "rod_size": 8,
+      "rods_number": 1,
+      "relaxation_length": 0,
+      "relaxation_number": 0
+    }
+  ]
+}
