@@ -15,8 +15,15 @@ def loadData(inputFile: str):
 def getOrderLengths(jsonFile):
     lengths = []
     for i in jsonFile["order"]:
-        for j in range(i["rods_number"]):
-            lengths.append(i["rod_size"])
+        lengths.append([i["rods_number"], i["rod_size"]])
+
+    return lengths
+
+def expandOrder(input):
+    lengths = []
+    for i in range(len(input)):
+        for j in range(input[i][0]):
+            lengths.append(input[i][1])
 
     return lengths
 

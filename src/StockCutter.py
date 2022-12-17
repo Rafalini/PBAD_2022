@@ -2,9 +2,8 @@ from ortools.linear_solver import pywraplp
 from math import ceil
 from random import randint
 import json
-from read_lengths import get_data
-import typer
-from typing import Optional
+import DataLoader
+import Graphics
 
 
 def newSolver(name, integer=False):
@@ -178,10 +177,6 @@ def bounds(demands, parent_width=100):
                 else:
                     k[1], T = k[1] + 1, 0  # use next roll (k[1] += 1)
     k[0] = int(round(TT / parent_width + 0.5))
-
-    print('k', k)
-    print('b', b)
-
     return k, b
 
 
@@ -206,8 +201,7 @@ def rolls(nb, x, w, demands):
     for j in range(len(x[0])):
         # w[j]: width of j-th big roll
         # int(x[i][j]) * [demands[i][1]] width of all i-th order's small rolls that are to be cut from j-th big roll
-        RR = [abs(w[j])] + [int(x[i][j]) * [demands[i][1]] for i in range(num_orders) \
-                            if x[i][j] > 0]  # if i-th order has some cuts from j-th order, x[i][j] would be > 0
+        RR = [round(abs(w[j]))] + [int(x[i][j]) * [demands[i][1]] for i in range(num_orders) if x[i][j] > 0]  # if i-th order has some cuts from j-th order, x[i][j] would be > 0
         consumed_big_rolls.append(RR)
 
     return consumed_big_rolls
@@ -222,7 +216,6 @@ def solve_large_model(demands, parent_width=100):
     num_orders = len(demands)
     iter = 0
     patterns = get_initial_patterns(demands)
-    # print('method#solve_large_model, patterns', patterns)
 
     # list quantities of orders
     quantities = [demands[i][0] for i in range(num_orders)]
@@ -384,8 +377,7 @@ def StockCutter1D(child_rolls, parent_rolls, output_json=True, large_model=True)
 
     if not large_model:
         print('Running Small Model...')
-        status, numRollsUsed, consumed_big_rolls, unused_roll_widths, wall_time = \
-            solve_model(demands=child_rolls, parent_width=parent_width)
+        status, numRollsUsed, consumed_big_rolls, unused_roll_widths, wall_time = solve_model(demands=child_rolls, parent_width=parent_width)
 
         # convert the format of output of solve_model to be exactly same as solve_large_model
         print('consumed_big_rolls before adjustment: ', consumed_big_rolls)
@@ -448,93 +440,22 @@ def StockCutter1D(child_rolls, parent_rolls, output_json=True, large_model=True)
 Draws the big rolls on the graph. Each horizontal colored line represents one big roll.
 In each big roll (multi-colored horizontal line), each color represents small roll to be cut from it.
 If the big roll ends with a black color, that part of the big roll is unused width.
-
-TODO: Assign each child roll a unique color
 '''
 
+def main():
 
-def drawGraph(consumed_big_rolls, child_rolls, parent_width):
-    import matplotlib.pyplot as plt
-    import matplotlib.patches as patches
+    jsonData = DataLoader.loadData("input.json")
+    child_rolls = DataLoader.getOrderLengths(jsonData)
 
-    # TODO: to add support for multiple different parent rolls, update here
-    xSize = parent_width  # width of big roll
-    ySize = 10 * len(consumed_big_rolls)  # one big roll will take 10 units vertical space
+    parent_rolls = [[5, jsonData["factory_rod_size"]]]  # 10 is height on chart
 
-    # draw rectangle
-    fig, ax = plt.subplots(1)
-    plt.xlim(0, xSize)
-    plt.ylim(0, ySize)
-    plt.gca().set_aspect('equal', adjustable='box')
+    consumed_big_rolls = StockCutter1D(child_rolls, parent_rolls, output_json=False, large_model=False)
+    print(f"{consumed_big_rolls}")
 
-    # print coords
-    coords = []
-    colors = ['r', 'g', 'b', 'y', 'brown', 'violet', 'pink', 'gray', 'orange', 'b', 'y']
-    colorDict = {}
-    i = 0
-    for quantity, width in child_rolls:
-        colorDict[width] = colors[i % 11]
-        i += 1
+    for idx, roll in enumerate(consumed_big_rolls):
+        print(f"Roll #{idx}: {roll}")
 
-    # start plotting each big roll horizontly, from the bottom
-    y1 = 0
-    for i, big_roll in enumerate(consumed_big_rolls):
-        '''
-          big_roll = [leftover_width, [small_roll_1_1, small_roll_1_2, other_small_roll_2_1]]
-        '''
-        unused_width = big_roll[0]
-        small_rolls = big_roll[1]
-
-        x1 = 0
-        x2 = 0
-        y2 = y1 + 8  # the height of each big roll will be 8
-        for j, small_roll in enumerate(small_rolls):
-            x2 = x2 + small_roll
-            print(f"{x1}, {y1} -> {x2}, {y2}")
-            width = abs(x1 - x2)
-            height = abs(y1 - y2)
-            # print(f"Rect#{idx}: {width}x{height}")
-            # Create a Rectangle patch
-            rect_shape = patches.Rectangle((x1, y1), width, height, facecolor=colorDict[small_roll],
-                                           label=f'{small_roll}')
-            ax.add_patch(rect_shape)  # Add the patch to the Axes
-            x1 = x2  # x1 for next small roll in same big roll will be x2 of current roll
-
-        # now that all small rolls have been plotted, check if a there is unused width in this big roll
-        # set the unused width at the end as black colored rectangle
-        if unused_width > 0:
-            width = unused_width
-            rect_shape = patches.Rectangle((x1, y1), width, height, facecolor='black', label='Unused')
-            ax.add_patch(rect_shape)  # Add the patch to the Axes
-
-        y1 += 10  # next big roll will be plotted on top of current, a roll height is 8, so 2 will be margin between rolls
-
-    plt.show()
-
+    Graphics.drawGraph(consumed_big_rolls, child_rolls, parent_width=parent_rolls[0][1])
 
 if __name__ == '__main__':
-
-    # child_rolls = [
-    #    [quantity, width],
-    # ]
-    app = typer.Typer()
-
-
-    def main(infile_name: Optional[str] = typer.Argument(None)):
-
-        if infile_name:
-            child_rolls = get_data(infile_name)
-        else:
-            child_rolls = gen_data(3)
-        parent_rolls = [[10, 120]]  # 10 doesn't matter, itls not used at the moment
-
-        consumed_big_rolls = StockCutter1D(child_rolls, parent_rolls, output_json=False, large_model=False)
-        typer.echo(f"{consumed_big_rolls}")
-
-        for idx, roll in enumerate(consumed_big_rolls):
-            typer.echo(f"Roll #{idx}:{roll}")
-
-        drawGraph(consumed_big_rolls, child_rolls, parent_width=parent_rolls[0][1])
-
-if __name__ == "__main__":
-    typer.run(main)
+   main()

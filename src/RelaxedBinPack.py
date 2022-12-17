@@ -28,5 +28,6 @@ def firstFit(weight, factoryRodSize):
 if __name__ == '__main__':
     jsonData = DataLoader.loadData("input.json")
     weight = DataLoader.getRelaxedOrderLengths(jsonData)
+    weight = DataLoader.expandOrder(weight)
     n = len(weight)
     print("Number of bins required in: " + str(firstFit(weight, jsonData["factory_rod_size"])))
